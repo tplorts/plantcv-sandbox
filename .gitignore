@@ -1,2 +1,4 @@
 output-images/
 .vscode/
+.vs/
+*.png

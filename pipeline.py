@@ -7,6 +7,18 @@ import argparse
 import string
 from plantcv import plantcv as pcv
 
+
+
+# Shortcuts to some parameters and thresholds you might want to tweak
+darkness_threshold = 116
+white_balance_roi = (888, 4044, 200, 100) # (X, Y, Width, Height)
+minimum_object_area_pixels = 900
+expected_number_of_rows = 9
+expected_number_of_columns = 8
+total_region_of_interest = { 'x': 0, 'y': 560, 'h': 4040-560, 'w': 3456 }
+
+
+
 ### Parse command-line arguments
 def options():
     parser = argparse.ArgumentParser(description="Imaging processing with opencv")
@@ -54,7 +66,7 @@ def main():
     # otherwise (x position, y position, box width, box height)
 
     #white balance image based on white toughspot
-    device,img1=pcv.white_balance(device,img,debug,roi=(888,4044,200,100))
+    device,img1=pcv.white_balance(device,img,debug,roi=white_balance_roi)
     # img1 = img
 
 
@@ -98,7 +110,7 @@ def main():
     #                  - If object is dark then inverse thresholding is done
     #    device      = device number. Used to count steps in the pipeline
     #    debug       = None, print, or plot. Print = save to file, Plot = print to screen.
-    device, img_binary = pcv.binary_threshold(a, 116, 255, 'dark', device, debug)
+    device, img_binary = pcv.binary_threshold(a, darkness_threshold, 255, 'dark', device, debug)
     #                                            ^
     #                                            |
     #                                           adjust this value
@@ -112,7 +124,7 @@ def main():
     #    device = device number. Used to count steps in the pipeline
     #    debug  = None, print, or plot. Print = save to file, Plot = print to screen.
     mask = np.copy(img_binary)
-    device, fill_image = pcv.fill(img_binary, mask, 900, device, debug)
+    device, fill_image = pcv.fill(img_binary, mask, minimum_object_area_pixels, device, debug)
     #                                               ^
     #                                               |
     #                                               adjust this value
@@ -154,7 +166,8 @@ def main():
     #    y_adj     = adjust center along y axis
     #    w_adj     = adjust width
     #    h_adj     = adjust height
-    roi_contour, roi_hierarchy = pcv.roi.rectangle(x=0, y=560, h=4040-560, w=3456, img=img1)
+    # x=0, y=560, h=4040-560, w=3456
+    roi_contour, roi_hierarchy = pcv.roi.rectangle(**total_region_of_interest, img=img1)
     # device, roi, roi_hierarchy = pcv.define_roi(img1, 'rectangle', device, None, 'default', debug, False, 
     #                                             0, 0, 0, 0)
     #                                            ^                ^
@@ -190,7 +203,8 @@ def main():
     #    filenames - input txt file with list of filenames in order from top to bottom left to right
     #    debug - print debugging images
 
-    device, clusters_i, contours = pcv.cluster_contours(device, img1, roi_objects, 9, 8, debug)
+    device, clusters_i, contours = pcv.cluster_contours(device, img1, roi_objects, 
+        expected_number_of_rows, expected_number_of_columns, debug)
 
     # print(contours)
 
